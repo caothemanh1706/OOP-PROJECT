@@ -4,3 +4,4 @@
 
 ## UML Diagram
 ![Class Diagram](src/assets/class.png)
+
