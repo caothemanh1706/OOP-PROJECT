@@ -17,7 +17,9 @@ public class Brick extends GameObjects {
     private boolean destroyed = false;
     private BufferedImage brickImage;
 
-    /** Constructor */
+    /**
+     * Constructor
+     */
     public Brick(float x, float y, int width, int height, int hitPoints, BrickType type, String imagePath) {
         super(x, y, width, height);
         this.hitPoints = hitPoints;
@@ -25,7 +27,9 @@ public class Brick extends GameObjects {
         loadImage(imagePath);
     }
 
-    /** Loads brick image from path. */
+    /**
+     * Loads brick image from path.
+     */
     private void loadImage(String path) {
         try {
             java.net.URL imgURL = getClass().getResource(path);
@@ -41,7 +45,9 @@ public class Brick extends GameObjects {
         }
     }
 
-    /** Changes brick image. */
+    /**
+     * Changes brick image.
+     */
     public void changeImage(String newPath) {
         try {
             java.net.URL imgURL = getClass().getResource(newPath);
@@ -53,6 +59,10 @@ public class Brick extends GameObjects {
         } catch (IOException e) {
             System.out.println("Cannot change the brick image: " + newPath);
         }
+    }
+
+    public Rectangle getBounds() {
+        return new Rectangle((int) x, (int) y, width, height);
     }
 
     public int getHitPoints() {
@@ -76,12 +86,16 @@ public class Brick extends GameObjects {
         return destroyed;
     }
 
-    /** Update logic */
+    /**
+     * Update logic
+     */
     @Override
     public void update() {
     }
 
-    /** Draws the brick */
+    /**
+     * Draws the brick
+     */
     @Override
     public void render(Graphics g) {
         if (destroyed) {
