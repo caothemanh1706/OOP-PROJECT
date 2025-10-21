@@ -14,6 +14,24 @@ public abstract class GameObjects {
         this.width = width;
         this.height = height;
     }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
     public abstract void update();
+
     public abstract void render(Graphics g);
 }
