@@ -128,7 +128,13 @@ public class GameManager {
         for (Brick brick : bricks) {
             if (!brick.isDestroyed() && ball.getBounds().intersects(brick.getBounds())) {
                 ball.bounceY();
-                brick.takeHit();
+
+                if (brick instanceof ExplosiveBrick) {
+                    ((ExplosiveBrick) brick).takeHit(bricks);
+                } else {
+                    brick.takeHit();
+                }
+
                 if (brick.isDestroyed()) {
                     bricksToRemove.add(brick);
                     score += 20;
