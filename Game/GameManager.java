@@ -219,69 +219,91 @@ public class GameManager {
         }
 
         // Ball vs Bricks
-        for (Brick brick : bricks) {
-            if (!brick.isDestroyed() && ball.getBounds().intersects(brick.getBounds())) {
+        for (Ball ball : balls) {
+            for (Brick brick : bricks) {
+                if (!brick.isDestroyed() && ball.getBounds().intersects(brick.getBounds())) {
+                    Rectangle brickBounds = brick.getBounds();
+                    Rectangle ballBounds = ball.getBounds();
 
-                Rectangle ballRect = ball.getBounds();
-                Rectangle brickRect = brick.getBounds();
+                    float ballCenterX = ball.getX() + ball.getWidth() / 2f;
+                    float ballCenterY = ball.getY() + ball.getHeight() / 2f;
 
-                // Calculate the overlap between the shadow and the tile
-                float overlapLeft = ballRect.x + ballRect.width - brickRect.x;
-                float overlapRight = brickRect.x + brickRect.width - ballRect.x;
-                float overlapTop = ballRect.y + ballRect.height - brickRect.y;
-                float overlapBottom = brickRect.y + brickRect.height - ballRect.y;
+                    float brickCenterX = brickBounds.x + brickBounds.width / 2f;
+                    float brickCenterY = brickBounds.y + brickBounds.height / 2f;
 
-                // Determine the collision direction (the direction with the smaller overlap)
-                float minOverlapX = Math.min(overlapLeft, overlapRight);
-                float minOverlapY = Math.min(overlapTop, overlapBottom);
+                    float distanceX = Math.abs(ballCenterX - brickCenterX);
+                    float distanceY = Math.abs(ballCenterY - brickCenterY);
 
-                if (minOverlapX < minOverlapY) {
-                    // Hit on the left or right
-                    ball.bounceX();
+                    float minDistanceX = ball.getWidth() / 2f + brickBounds.width / 2f;
+                    float minDistanceY = ball.getHeight() / 2f + brickBounds.height / 2f;
 
-                    // Kick the ball out of the tiles to avoid getting stuck
-                    if (overlapLeft < overlapRight) {
-                        ball.setX(brick.getX() - ball.getWidth() - 1);
-                    } else {
-                        ball.setX(brick.getX() + brick.getWidth() + 1);
-                    }
-                } else {
-                    // Hit on top or bottom
-                    ball.bounceY();
+                    float overlapX = minDistanceX - distanceX;
+                    float overlapY = minDistanceY - distanceY;
 
-                    // Kick the ball out of bounds to avoid congestion
-                    if (overlapTop < overlapBottom) {
-                        ball.setY(brick.getY() - ball.getHeight() - 1);
-                    } else {
-                        ball.setY(brick.getY() + brick.getHeight() + 1);
-                    }
-                }
+                    boolean collisionX = false;
+                    boolean collisionY = false;
 
-                // Brick handling (explosions, points, power-ups...)
-                if (brick instanceof ExplosiveBrick) {
-                    SoundManager.playSound("explosion.wav");
-                    ((ExplosiveBrick) brick).takeHit(bricks);
-                } else {
-                    brick.takeHit();
-                    SoundManager.playSound("brick_hit.wav");
-                }
-
-                if (brick.isDestroyed()) {
-                    bricksToRemove.add(brick);
-                    score += 20;
-
-                    if (currentLevel != null && currentLevel.hasPowerUp()) {
-                        if (random.nextFloat() < 0.2f) {
-                            PowerUp p = new ExpandPaddlePowerUp(
-                                    brick.getX() + brick.getWidth() / 2f,
-                                    brick.getY() + brick.getHeight()
-                            );
-                            powerUps.add(p);
+                    if (overlapX > 0 && overlapY > 0) {
+                        if (overlapX < overlapY) {
+                            collisionX = true;
+                        } else {
+                            collisionY = true;
                         }
                     }
+
+                    if (collisionY) {
+                        if (ballCenterY < brickCenterY) {
+                            ball.setY(brickBounds.y - ball.getHeight() - 1);
+                        } else {
+                            ball.setY(brickBounds.y + brickBounds.height + 1);
+                        }
+                        ball.bounceY();
+                    } else if (collisionX) {
+                        if (ballCenterX < brickCenterX) {
+                            ball.setX(brickBounds.x - ball.getWidth() - 1);
+                        } else {
+                            ball.setX(brickBounds.x + brickBounds.width + 1);
+                        }
+                        ball.bounceX();
+                    } else {
+                        if (ball.getDirectionY() < 0) {
+                            ball.setY(brickBounds.y + brickBounds.height + 1);
+                        } else {
+                            ball.setY(brickBounds.y - ball.getHeight() - 1);
+                        }
+                        ball.bounceY();
+                    }
+
+                    if (brick.getClass().getSimpleName().equals("UnbreakableBrick")) {
+                        SoundManager.playSound("paddle_hit.wav");
+                    } else if (brick instanceof ExplosiveBrick) {
+                        SoundManager.playSound("explosion.wav");
+                        ((ExplosiveBrick) brick).takeHit(bricks);
+                    } else {
+                        brick.takeHit();
+                        SoundManager.playSound("brick_hit.wav");
+                    }
+
+                    if (brick.isDestroyed()) {
+                        bricksToRemove.add(brick);
+                        score += 20;
+
+                        // Spawn ExpandPaddle powerup
+                        if (random.nextFloat() < 0.2f) {
+                            powerUps.add(new ExpandPaddlePowerUp(
+                                    brick.getX() + brick.getWidth() / 2f,
+                                    brick.getY() + brick.getHeight()));
+                        }
+
+                        // Spawn TripleBall powerup
+                        if (random.nextFloat() < 0.2f) {
+                            powerUps.add(new TripleBallsPowerUp(
+                                    brick.getX() + brick.getWidth() / 2f,
+                                    brick.getY() + brick.getHeight()));
+                        }
+                    }
+                    break;
                 }
-                // Process only 1 tile per frame
-                break;
             }
         }
 
