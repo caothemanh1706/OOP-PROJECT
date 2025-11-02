@@ -28,7 +28,8 @@ public class GameManager {
     private Ball ball;
     public List<Brick> bricks;
     private Level currentLevel;
-    private int currentLevelIndex;
+    private int currentLevelIndex = 1;
+    private static final int MAX_LEVELS = 5;
     private List<PowerUp> powerUps = new ArrayList<>();
     private Random random = new Random();
     private int score = 0;
@@ -134,16 +135,10 @@ public class GameManager {
             Rectangle[] buttonBounds = menu.getButtonBounds(renderer.getWidth(), renderer.getHeight());
 
             if (buttonBounds[1].contains(mouseX, mouseY)) {
-                if (currentLevel == null) {
-                    currentLevelIndex = 1;
-                    currentLevel = new Levels.Level1();
-                }
-
                 SoundManager.stopMenuMusic();
-
-                loadLevel(currentLevel, renderer);
+                loadLevelFromFile(currentLevelIndex);
                 gameState = STATE_READY;
-                System.out.println("Game ready to start");
+                System.out.println("Game ready to start level " + currentLevelIndex);
             } else if (buttonBounds[0].contains(mouseX, mouseY)) {
                 System.out.println("Display High Score (TBD)");
             } else if (buttonBounds[2].contains(mouseX, mouseY)) {
@@ -324,22 +319,15 @@ public class GameManager {
         }
 
         // Level cleared
-        if (bricks.isEmpty()) {
-            System.out.println(" Level " + currentLevelIndex + " completed!");
-
-            currentLevelIndex++;
-
-            if (currentLevelIndex <= 2) {
-                System.out.println("Loading Level " + currentLevelIndex + "...");
+        if (checkLevelCleared()) {
+            if (currentLevelIndex < MAX_LEVELS) {
+                currentLevelIndex++;
+                System.out.println("Level cleared! Loading level " + currentLevelIndex + "...");
                 loadLevelFromFile(currentLevelIndex);
-
-                paddle.setX((renderer.getWidth() - paddle.getWidth()) / 2f);
-                ball.resetPosition();
-
-                gameState = STATE_READY;
+                resetAfterLevel();
             } else {
                 gameState = STATE_WON;
-                System.out.println(" Congratulations! You completed all levels!");
+                System.out.println("Congratulations! You completed all levels!");
             }
         }
     }
@@ -392,5 +380,32 @@ public class GameManager {
     }
     public String getGameState() {
         return gameState;
+    }
+
+    private boolean checkLevelCleared() {
+        for (Brick brick : bricks) {
+            if (brick instanceof UnbreakableBrick) continue;
+            if (!brick.isDestroyed()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void resetAfterLevel() {
+        powerUps.clear();
+        balls.clear();
+
+        Ball newBall = new Ball(
+                paddle.getX() + paddle.getWidth() / 2f - 10,
+                paddle.getY() - 25,
+                20, 20, 0, 0, 0f, 0f, 6f,
+                renderer.getWidth(), renderer.getHeight(),
+                "/assets/ball.png"
+        );
+        balls.add(newBall);
+
+        paddle.setX((renderer.getWidth() - paddle.getWidth()) / 2f);
+        gameState = STATE_READY;
     }
 }
