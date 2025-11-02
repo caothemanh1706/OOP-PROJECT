@@ -335,6 +335,7 @@ public class GameManager {
     /** Loads a level by reading its text file. */
     private void loadLevelFromFile(int levelNumber) {
         bricks.clear();
+        renderer.clearBricks();
 
         currentLevel = new Levels.Level(100, 50, 64, 32, 4) {
             @Override
