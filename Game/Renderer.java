@@ -61,4 +61,8 @@ public class Renderer extends JPanel {
             obj.render(g);
         }
     }
+
+    public void clearBricks() {
+        gameObjects.removeIf(obj -> obj instanceof Objects.Brick);
+    }
 }
