@@ -55,4 +55,4 @@ Mục tiêu: **Phá hết gạch trong mỗi màn chơi và không để bóng r
 - Nhạc nền  
 
 ##  UML Diagram
-![Class Diagram](assets/class.png)
+![Class Diagram](assets/umlDiagram.PNG)
