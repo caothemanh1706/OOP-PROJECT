@@ -29,6 +29,7 @@ public class GameManager {
     private final List<Brick> bricks = new ArrayList<>();
     private final List<Ball> balls = new ArrayList<>();
     private final List<PowerUp> powerUps = new ArrayList<>();
+    private final List<ExplosionEffect> explosions = new ArrayList<>();
 
     private Level currentLevel;
     private int lastLevelNumber = 1;
@@ -49,6 +50,7 @@ public class GameManager {
     public Paddle getPaddle() { return paddle; }
     public int getLives() { return lives; }
     public int getScore() { return score; }
+    public List<ExplosionEffect> getExplosions() { return explosions; }
 
     // ==== SINGLETON ACCESS ====
     public static GameManager getInstance() {
@@ -119,7 +121,7 @@ public class GameManager {
     private void handleLevelProgression() {
         if (checkLevelCleared()) {
             if (isCustomLevel) {
-                gameState = GameState.WON;  //  nếu là level chọn thủ công thì thắng luôn
+                gameState = GameState.WON;  // nếu là level chọn thủ công thì thắng luôn
                 System.out.println("You won the selected level!");
                 renderer.repaint();
                 return;
@@ -140,15 +142,7 @@ public class GameManager {
     /** Reset balls, paddle, power-ups after level cleared */
     private void resetAfterLevel() {
         powerUps.clear();
-        balls.clear();
-        Ball newBall = new Ball(
-                paddle.getX() + paddle.getWidth() / 2f - 10,
-                paddle.getY() - 25,
-                20, 20, 0, 0, 0f, 0f, 6f,
-                renderer.getWidth(), renderer.getHeight(),
-                "/assets/ball.png"
-        );
-        balls.add(newBall);
+        createInitialBall();
         paddle.setX((renderer.getWidth() - paddle.getWidth()) / 2f);
         gameState = GameState.READY;
     }
@@ -164,6 +158,10 @@ public class GameManager {
             if (currentLevel == null) {
                 currentLevelIndex = 1;
                 loadLevelFromFile(currentLevelIndex,false);
+
+                if (balls.isEmpty()) {
+                    createInitialBall();
+                }
             }
             SoundManager.stopMenuMusic();
             gameState = GameState.READY;
@@ -200,6 +198,9 @@ public class GameManager {
             }
             case KeyEvent.VK_SPACE -> {
                 if (gameState == GameState.READY) {
+                    if (balls.isEmpty()) {
+                        return;
+                    }
                     gameState = GameState.PLAYING;
                     balls.get(0).setDirectionX(0f);
                     balls.get(0).setDirectionY(-1f);
@@ -221,7 +222,20 @@ public class GameManager {
             return;
         }
 
+        Iterator<ExplosionEffect> explosionIterator = explosions.iterator();
+        while (explosionIterator.hasNext()) {
+            ExplosionEffect e = explosionIterator.next();
+            e.update();
+            if (e.isFinished()) {
+                explosionIterator.remove();
+            }
+        }
+
         if (gameState == GameState.READY) {
+            if (balls.isEmpty()) {
+                renderer.repaint();
+                return;
+            }
             Ball mainBall = balls.get(0);
             mainBall.setX(paddle.getX() + paddle.getWidth() / 2 - mainBall.getWidth() / 2);
             mainBall.setY(paddle.getY() - mainBall.getHeight() - 5);
@@ -255,6 +269,9 @@ public class GameManager {
                 float relative = (ballCenterX - paddleCenterX) / (paddle.getWidth() / 2f);
                 relative = Math.max(-1f, Math.min(1f, relative));
                 float angle = relative * (float) Math.toRadians(45);
+                float paddleInfluence = 0.4f;
+                float paddleDir = paddle.getDx() / paddle.getSpeed();
+                angle += paddleInfluence * paddleDir * (float) Math.toRadians(45);
                 ball.setDirectionX((float) Math.sin(angle));
                 ball.setDirectionY((float) -Math.cos(angle));
                 ball.setY(paddle.getY() - ball.getHeight() - 1);
@@ -327,6 +344,18 @@ public class GameManager {
                     }
 
                     if (brick.isDestroyed()) {
+                        if (brick instanceof ExplosiveBrick) {
+                            int explosionSize = 160;
+                            float offset = 80f;
+
+                            ExplosionEffect newExplosion = new ExplosionEffect(
+                                    brick.getX() + brick.getWidth() / 2f - offset,
+                                    brick.getY() + brick.getHeight() / 2f - offset,
+                                    explosionSize, explosionSize,
+                                    "/assets/explosion.gif"
+                            );
+                            explosions.add(newExplosion);
+                        }
                         bricksToRemove.add(brick);
                         score += 20;
 
@@ -425,14 +454,7 @@ public class GameManager {
         paddle.setX((renderer.getWidth() - paddle.getWidth()) / 2f);
         paddle.stop();
 
-        Ball mainBall = new Ball(
-                paddle.getX() + paddle.getWidth() / 2f - 10,
-                paddle.getY() - 25,
-                20, 20, 0, 0, 0f, 0f, 6f,
-                renderer.getWidth(), renderer.getHeight(),
-                "/assets/ball.png"
-        );
-        balls.add(mainBall);
+        createInitialBall();
         gameState = GameState.READY;
 
         SoundManager.stopMenuMusic();
@@ -455,8 +477,13 @@ public class GameManager {
         this.lastLevelNumber = 1;
 
         if (renderer != null) renderer.resetRenderer();
-        startNewGame();
+        paddle.setWidth(100);
+        paddle.setX((renderer.getWidth() - paddle.getWidth()) / 2f);
+        paddle.stop();
+        createInitialBall();
+
         setGameState(GameState.MENU);
+        SoundManager.playMusic();
     }
 
 
@@ -466,6 +493,31 @@ public class GameManager {
     }
 
     public void setGameState(GameState gameState) {
+        if (this.gameState == gameState) return;
         this.gameState = gameState;
+        if (gameState == GameState.PAUSED) {
+            System.out.println("Game Logic: PAUSED");
+        } else if (gameState == GameState.PLAYING) {
+            System.out.println("Game Logic: PLAYING");
+        }
+
+        if (renderer != null) {
+            renderer.repaint();
+        }
+    }
+
+    private void createInitialBall() {
+        balls.clear();
+
+        Ball mainBall = new Ball(
+                paddle.getX() + paddle.getWidth() / 2f - 10,
+                paddle.getY() - 25,
+                20, 20, 0, 0, 0f, 0f, 6f, // Khởi tạo với tốc độ ban đầu 0
+                renderer.getWidth(), renderer.getHeight(),
+                "/assets/ball.png"
+        );
+
+        balls.add(mainBall);
+        System.out.println("Initial ball created and placed on paddle.");
     }
 }
