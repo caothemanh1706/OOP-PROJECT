@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class PauseOverlay {
     private final Map<String, Rectangle2D> buttonBounds = new HashMap<>();
-    private final String[] labels = {"CONTINUE", "RESTART", "HIGH SCORE"};
+    private final String[] labels = {"CONTINUE", "RESTART", "BACK"};
 
     public PauseOverlay() {
     }
