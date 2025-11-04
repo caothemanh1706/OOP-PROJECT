@@ -175,6 +175,12 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
         for (GameObjects obj : gameObjects) obj.render(g);
         GameManager.getInstance().getBalls().forEach(ball -> ball.render(g));
         GameManager.getInstance().getPowerUps().forEach(p -> p.render(g));
+        
+        List<ExplosionEffect> explosions = GameManager.getInstance().getExplosions();
+        for (ExplosionEffect e : explosions) {
+            e.render(g);
+        }
+        
         drawHUD(g);
     }
 
