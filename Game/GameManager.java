@@ -29,7 +29,6 @@ public class GameManager {
     private final List<Brick> bricks = new ArrayList<>();
     private final List<Ball> balls = new ArrayList<>();
     private final List<PowerUp> powerUps = new ArrayList<>();
-    private final List<ExplosionEffect> explosions = new ArrayList<>();
 
     private Level currentLevel;
     private int lastLevelNumber = 1;
@@ -50,7 +49,6 @@ public class GameManager {
     public Paddle getPaddle() { return paddle; }
     public int getLives() { return lives; }
     public int getScore() { return score; }
-    public List<ExplosionEffect> getExplosions() { return explosions; }
 
     // ==== SINGLETON ACCESS ====
     public static GameManager getInstance() {
@@ -121,7 +119,7 @@ public class GameManager {
     private void handleLevelProgression() {
         if (checkLevelCleared()) {
             if (isCustomLevel) {
-                gameState = GameState.WON;  // ✅ nếu là level chọn thủ công thì thắng luôn
+                gameState = GameState.WON;  //  nếu là level chọn thủ công thì thắng luôn
                 System.out.println("You won the selected level!");
                 renderer.repaint();
                 return;
@@ -221,15 +219,6 @@ public class GameManager {
         if (gameState == GameState.PAUSED || gameState == GameState.GAME_OVER || gameState == GameState.WON) {
             renderer.repaint();
             return;
-        }
-
-        Iterator<ExplosionEffect> explosionIterator = explosions.iterator();
-        while (explosionIterator.hasNext()) {
-            ExplosionEffect e = explosionIterator.next();
-            e.update();
-            if (e.isFinished()) {
-                explosionIterator.remove();
-            }
         }
 
         if (gameState == GameState.READY) {
@@ -338,19 +327,6 @@ public class GameManager {
                     }
 
                     if (brick.isDestroyed()) {
-                        if (brick instanceof ExplosiveBrick) {
-                            int explosionSize = 160;
-                            float offset = 80f;
-
-                            ExplosionEffect newExplosion = new ExplosionEffect(
-                                    brick.getX() + brick.getWidth() / 2f - offset,
-                                    brick.getY() + brick.getHeight() / 2f - offset,
-                                    explosionSize, explosionSize,
-                                    "/assets/explosion.gif"
-                            );
-                            explosions.add(newExplosion);
-                        }
-
                         bricksToRemove.add(brick);
                         score += 20;
 
