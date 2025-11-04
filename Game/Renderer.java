@@ -11,11 +11,14 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.Timer;
+
 import Menus.Menu;
 import Menus.GameOverMenu;
 import Menus.HighScoreMenu;
 import Menus.HowToPlayMenu;
 import Menus.LevelMenu;
+import Menus.PauseOverlay;
 
 
 /**
@@ -30,6 +33,8 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
     private BufferedImage heartImage;
     private BufferedImage pauseImage;
     private BufferedImage winBackground;
+    private BufferedImage playButtonimage;
+    private boolean showStartText = true;
 
     // ====================== GAME OBJECTS ======================
     private final List<GameObjects> gameObjects = new ArrayList<>();
@@ -41,6 +46,7 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
     private HighScoreMenu highScoreMenu;
     private HowToPlayMenu howtoplayMenu;
     private LevelMenu levelMenu;
+    private PauseOverlay pauseOverlay;
 
     // ====================== PAUSE ICON CONFIG ======================
     private static final int PAUSE_ICON_SIZE = 50;
@@ -67,6 +73,15 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
         initMenus();
         GameManager.getInstance().startGame(this, paddle, firstBall);
 
+        Timer blinkTimer = new Timer(400, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showStartText = !showStartText;
+                repaint();
+            }
+        });
+        blinkTimer.start();
+
         addMouseListener(this);
         addMouseMotionListener(this);
     }
@@ -80,6 +95,7 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
             winBackground = ImageIO.read(getClass().getResourceAsStream("/assets/win.png"));
             heartImage = ImageIO.read(getClass().getResourceAsStream("/assets/heart.png"));
             pauseImage = ImageIO.read(getClass().getResourceAsStream("/assets/pause.png"));
+            playButtonimage = ImageIO.read(getClass().getResourceAsStream("/assets/playbutton.png"));
         } catch (IOException | IllegalArgumentException e) {
             System.err.println(" Không tìm thấy ảnh background/menu.");
         }
@@ -91,6 +107,7 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
         highScoreMenu = new HighScoreMenu();
         howtoplayMenu = new HowToPlayMenu();
         levelMenu = new LevelMenu();
+        pauseOverlay = new PauseOverlay();
     }
 
     public Menu getGameMenu() { return gameMenu; }
@@ -135,6 +152,10 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
         }
 
         if (gameState == GameState.READY) drawStartText(g);
+
+        if (gameState == GameState.PAUSED) {
+            pauseOverlay.render(g, getWidth(), getHeight());
+        }
     }
 
     // ====================== DRAW STATES ======================
@@ -175,16 +196,14 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
         for (GameObjects obj : gameObjects) obj.render(g);
         GameManager.getInstance().getBalls().forEach(ball -> ball.render(g));
         GameManager.getInstance().getPowerUps().forEach(p -> p.render(g));
-        
         List<ExplosionEffect> explosions = GameManager.getInstance().getExplosions();
         for (ExplosionEffect e : explosions) {
             e.render(g);
         }
-        
-        drawHUD(g);
+        drawHUD(g, GameManager.getInstance());
     }
 
-    private void drawHUD(Graphics g) {
+    private void drawHUD(Graphics g, GameManager manager) {
         GameManager m = GameManager.getInstance();
 
         // Draw hearts
@@ -198,15 +217,26 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
         g.drawString("Score: " + m.getScore(), getWidth() - 120, 50);
 
         // Pause icon
-        g.drawImage(pauseImage, PAUSE_ICON_X, PAUSE_ICON_Y, PAUSE_ICON_SIZE, PAUSE_ICON_SIZE, null);
+        if (manager.getGameState() == GameState.PLAYING || manager.getGameState() == GameState.PAUSED) {
+            BufferedImage iconToDraw;
+            if (manager.getGameState() == GameState.PAUSED) {
+                iconToDraw = playButtonimage;
+            } else {
+                iconToDraw = pauseImage;
+            }
+            g.drawImage(pauseImage, PAUSE_ICON_X, PAUSE_ICON_Y, PAUSE_ICON_SIZE, PAUSE_ICON_SIZE, this);
+        }
     }
 
     private void drawStartText(Graphics g) {
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Serif", Font.ITALIC, 48));
-        String msg = "Press SPACE to START";
-        int x = (getWidth() - g.getFontMetrics().stringWidth(msg)) / 2;
-        g.drawString(msg, x, getHeight() / 2 + 100);
+        if (showStartText) {
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Serif", Font.ITALIC, 48));
+            String msg = "Press SPACE to START";
+            int x = (getWidth() - g.getFontMetrics().stringWidth(msg)) / 2;
+
+            g.drawString(msg, x, getHeight() / 2 + 150);
+        }
     }
 
     // ====================== MOUSE EVENTS ======================
@@ -235,6 +265,26 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
             togglePause(manager);
             repaint();
             return;
+        }
+
+        if (manager.getGameState() == GameState.PAUSED) {
+            String choice = pauseOverlay.handleMouseClick(p);
+
+            if (choice != null) {
+                switch (choice) {
+                    case "CONTINUE" -> {
+                        togglePause(manager);
+                        SoundManager.stopMenuMusic();
+                    }
+                    case "RESTART" -> {
+                        manager.startNewGame();
+                        SoundManager.stopMenuMusic();
+                    }
+                    case "BACK" -> manager.goToMainMenu();
+                }
+                repaint();
+                return;
+            }
         }
 
         switch (manager.getGameState()) {
@@ -280,10 +330,13 @@ public class Renderer extends JPanel implements MouseListener, MouseMotionListen
     }
 
     private void togglePause(GameManager m) {
-        if (m.getGameState() == GameState.PLAYING)
+        if (m.getGameState() == GameState.PLAYING) {
             m.setGameState(GameState.PAUSED);
-        else if (m.getGameState() == GameState.PAUSED)
+            SoundManager.stopMenuMusic();
+        }  else if (m.getGameState() == GameState.PAUSED) {
             m.setGameState(GameState.PLAYING);
+        }
+        repaint();
     }
 
     private void handleGameOverClick(GameManager m, Point p) {
