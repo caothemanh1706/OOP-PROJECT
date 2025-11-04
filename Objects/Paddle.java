@@ -1,16 +1,34 @@
 package Objects;
 
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.geom.Rectangle2D;
-import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 
 public class Paddle extends MovableObject {
     private float speed;
+    private BufferedImage paddleImage;
 
-    public Paddle(int x, int y, int width, int height, float dx, float dy, float speed) {
+    public Paddle(int x, int y, int width, int height, float dx, float dy, float speed, String imagePath) {
         super(x, y, width, height, dx, dy);
         this.speed = speed;
+        loadImage(imagePath);
+    }
+
+    private void loadImage(String path) {
+        try {
+            java.net.URL imgURL = getClass().getResource(path);
+            if (imgURL != null) {
+                paddleImage = ImageIO.read(imgURL);
+            } else {
+                System.out.println("Paddle image not found: " + path);
+                paddleImage = null;
+            }
+        } catch (IOException e) {
+            System.out.println("Cannot load paddle image: " + path);
+            paddleImage = null;
+        }
     }
 
     public void moveLeft() {
@@ -20,15 +38,19 @@ public class Paddle extends MovableObject {
     public void moveRight() {
         dx = speed;
     }
+
     public void stop() {
         dx = 0;
     }
 
     @Override
     public void render(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g;
-        g2d.setColor(java.awt.Color.WHITE);
-        g2d.fill(new Rectangle2D.Float(x, y, width, height));
+        if (paddleImage != null) {
+            g.drawImage(paddleImage, (int)x, (int)y, width, height, null);
+        } else {
+            g.setColor(Color.WHITE);
+            g.fillRect((int)x, (int)y, width, height);
+        }
     }
 
     @Override
@@ -47,12 +69,25 @@ public class Paddle extends MovableObject {
         return x;
     }
 
+    public void setX(float x) {
+        this.x = x;
+    }
+
     public float getY() { return y; }
+
+    public void setWidth(int newWidth) {
+        this.width = newWidth;
+    }
 
     public int getWidth() {
         return width;
     }
-    public int getHeight() {
-        return height;
+
+    public float getSpeed() {
+        return speed;
+    }
+
+    public float getDx() {
+        return dx;
     }
 }

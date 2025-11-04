@@ -269,6 +269,9 @@ public class GameManager {
                 float relative = (ballCenterX - paddleCenterX) / (paddle.getWidth() / 2f);
                 relative = Math.max(-1f, Math.min(1f, relative));
                 float angle = relative * (float) Math.toRadians(45);
+                float paddleInfluence = 0.4f;
+                float paddleDir = paddle.getDx() / paddle.getSpeed();
+                angle += paddleInfluence * paddleDir * (float) Math.toRadians(45);
                 ball.setDirectionX((float) Math.sin(angle));
                 ball.setDirectionY((float) -Math.cos(angle));
                 ball.setY(paddle.getY() - ball.getHeight() - 1);
