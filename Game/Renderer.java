@@ -1,42 +1,104 @@
 package Game;
 
 import Objects.*;
+import powerups.PowerUp;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import Menus.Menu;
+import Menus.GameOverMenu;
+import Menus.HighScoreMenu;
+import Menus.HowToPlayMenu;
+import Menus.LevelMenu;
 
-public class Renderer extends JPanel {
-    private final List<GameObjects> gameObjects = new ArrayList<>();
+
+/**
+ * Xử lý render giao diện game Arkanoid.
+ */
+public class Renderer extends JPanel implements MouseListener, MouseMotionListener {
+
+    // ====================== TÀI NGUYÊN ======================
     private BufferedImage background;
-    private Paddle paddle;
-    private Ball ball;
+    private BufferedImage menuBackground;
+    private BufferedImage gameOverBackground;
+    private BufferedImage heartImage;
+    private BufferedImage pauseImage;
+    private BufferedImage winBackground;
 
+    // ====================== GAME OBJECTS ======================
+    private final List<GameObjects> gameObjects = new ArrayList<>();
+    private Paddle paddle;
+
+    // ====================== MENU ======================
+    private Menu gameMenu;
+    private GameOverMenu gameOverMenu;
+    private HighScoreMenu highScoreMenu;
+    private HowToPlayMenu howtoplayMenu;
+    private LevelMenu levelMenu;
+
+    // ====================== PAUSE ICON CONFIG ======================
+    private static final int PAUSE_ICON_SIZE = 50;
+    private static final int PAUSE_ICON_X = 20;
+    private static final int PAUSE_ICON_Y = 20;
+
+    // ====================== CONSTRUCTOR ======================
     public Renderer() {
-        try {
-            background = ImageIO.read(getClass().getResourceAsStream("/assets/background1.png"));
-        } catch (IOException | IllegalArgumentException e) {
-            System.err.println("Background not found.");
-            background = null;
-        }
+        loadAssets();
 
         setBackground(Color.BLACK);
-        paddle = new Paddle(350, 500, 100, 20, 0, 0, 5);
+
+        paddle = new Paddle(350, 500, 100, 20, 0, 0, 7, "/assets/paddle.png");
         gameObjects.add(paddle);
 
-        ball = new Ball(paddle.getX() + paddle.getWidth() / 2 - 10,
-                paddle.getY() - 20 - 5,
-                20, 20, 0, 0, 0f, 0f, 5f,
-                800, 600, "/assets/ball.png"
-         );
+        Ball firstBall = new Ball(
+                paddle.getX() + paddle.getWidth() / 2 - 10,
+                paddle.getY() - 25,
+                20, 20, 0, 0,
+                0f, 0f, 6f,
+                785, 600, "/assets/ball.png"
+        );
 
-        gameObjects.add(ball);
-        GameManager.getInstance().startGame(this, paddle, ball);
+        initMenus();
+        GameManager.getInstance().startGame(this, paddle, firstBall);
+
+        addMouseListener(this);
+        addMouseMotionListener(this);
     }
 
+    // ====================== LOAD IMAGES ======================
+    private void loadAssets() {
+        try {
+            background = ImageIO.read(getClass().getResourceAsStream("/assets/background2.png"));
+            menuBackground = ImageIO.read(getClass().getResourceAsStream("/assets/Background3.png"));
+            gameOverBackground = ImageIO.read(getClass().getResourceAsStream("/assets/GameOverBackGround.png"));
+            winBackground = ImageIO.read(getClass().getResourceAsStream("/assets/win.png"));
+            heartImage = ImageIO.read(getClass().getResourceAsStream("/assets/heart.png"));
+            pauseImage = ImageIO.read(getClass().getResourceAsStream("/assets/pause.png"));
+        } catch (IOException | IllegalArgumentException e) {
+            System.err.println(" Không tìm thấy ảnh background/menu.");
+        }
+    }
+
+    private void initMenus() {
+        gameMenu = new Menu();
+        gameOverMenu = new GameOverMenu();
+        highScoreMenu = new HighScoreMenu();
+        howtoplayMenu = new HowToPlayMenu();
+        levelMenu = new LevelMenu();
+    }
+
+    public Menu getGameMenu() { return gameMenu; }
+    public GameOverMenu getGameOverMenu() { return gameOverMenu; }
+    public HowToPlayMenu getHowToPlayMenu() { return howtoplayMenu; }
+    public LevelMenu getLevelMenu() { return levelMenu; }
+
+    // ====================== GAME OBJECT CONTROL ======================
     public void addGameObject(GameObjects obj) {
         gameObjects.add(obj);
     }
@@ -45,24 +107,193 @@ public class Renderer extends JPanel {
         return paddle;
     }
 
-    public Ball getBall() {
-        return ball;
+    public void resetRenderer() {
+        gameObjects.clear();
+        gameObjects.add(paddle);
+        repaint();
     }
 
+    // ====================== RENDER ======================
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        if (background != null) {
+        GameManager manager = GameManager.getInstance();
+        GameState gameState = manager.getGameState();
+
+        switch (gameState) {
+            case MENU -> drawMenu(g);
+            case HOWTOPLAY -> drawHowToPlayScreen(g);
+            case WON -> drawWinScreen(g);
+            case GAME_OVER -> drawGameOverScreen(g);
+            case LEVELS -> drawLevelsScreen(g);
+            case HIGHSCORE -> {
+                highScoreMenu.render(g, getWidth(), getHeight());
+                return;
+            }
+            default -> drawGame(g);
+        }
+
+        if (gameState == GameState.READY) drawStartText(g);
+    }
+
+    // ====================== DRAW STATES ======================
+    private void drawMenu(Graphics g) {
+        if (menuBackground != null)
+            g.drawImage(menuBackground, 0, 0, getWidth(), getHeight(), null);
+
+        gameMenu.render(g, getWidth(), getHeight());
+    }
+
+    private void drawHowToPlayScreen(Graphics g) {
+        howtoplayMenu.render(g, getWidth(), getHeight());
+    }
+
+    private void drawLevelsScreen(Graphics g) {
+        levelMenu.render(g, getWidth(), getHeight());
+    }
+
+    private void drawWinScreen(Graphics g) {
+        if (winBackground != null)
+            g.drawImage(winBackground, 0, 0, getWidth(), getHeight(), null);
+
+        gameOverMenu.render(g, getWidth(), getHeight());
+
+    }
+
+    private void drawGameOverScreen(Graphics g) {
+        if (gameOverBackground != null)
+            g.drawImage(gameOverBackground, 0, 0, getWidth(), getHeight(), null);
+
+        gameOverMenu.render(g, getWidth(), getHeight());
+    }
+
+    private void drawGame(Graphics g) {
+        if (background != null)
             g.drawImage(background, 0, 0, getWidth(), getHeight(), null);
+
+        for (GameObjects obj : gameObjects) obj.render(g);
+        GameManager.getInstance().getBalls().forEach(ball -> ball.render(g));
+        GameManager.getInstance().getPowerUps().forEach(p -> p.render(g));
+        drawHUD(g);
+    }
+
+    private void drawHUD(Graphics g) {
+        GameManager m = GameManager.getInstance();
+
+        // Draw hearts
+        int size = 25;
+        int startX = getWidth() - (m.getLives() * (size + 5)) - 20;
+        for (int i = 0; i < m.getLives(); i++)
+            g.drawImage(heartImage, startX + i * (size + 5), 10, size, size, null);
+
+        // Score
+        g.setColor(Color.WHITE);
+        g.drawString("Score: " + m.getScore(), getWidth() - 120, 50);
+
+        // Pause icon
+        g.drawImage(pauseImage, PAUSE_ICON_X, PAUSE_ICON_Y, PAUSE_ICON_SIZE, PAUSE_ICON_SIZE, null);
+    }
+
+    private void drawStartText(Graphics g) {
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Serif", Font.ITALIC, 48));
+        String msg = "Press SPACE to START";
+        int x = (getWidth() - g.getFontMetrics().stringWidth(msg)) / 2;
+        g.drawString(msg, x, getHeight() / 2 + 100);
+    }
+
+    // ====================== MOUSE EVENTS ======================
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        GameManager manager = GameManager.getInstance();
+
+        switch (manager.getGameState()) {
+            case MENU -> gameMenu.handleMouseMove(e.getPoint(), getWidth(), getHeight());
+            case HOWTOPLAY -> howtoplayMenu.handleMouseMove(e.getPoint(), getWidth(), getHeight());
+            case GAME_OVER,WON -> gameOverMenu.handleMouseMove(e.getPoint(), getWidth(), getHeight());
+            case HIGHSCORE -> highScoreMenu.handleMouseMove(e.getPoint(), getWidth(), getHeight());
+            case LEVELS-> levelMenu.handleMouseMove(e.getPoint(), getWidth(), getHeight());
         }
 
-        for (GameObjects obj : gameObjects) {
-            obj.render(g);
+        repaint();
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        GameManager manager = GameManager.getInstance();
+        Point p = e.getPoint();
+
+        // Pause button click
+        if (isPauseClicked(p)) {
+            togglePause(manager);
+            repaint();
+            return;
+        }
+
+        switch (manager.getGameState()) {
+            case MENU -> manager.handleMouseClick(p.x, p.y);
+            case GAME_OVER, WON -> handleGameOverClick(manager, p);
+            case HOWTOPLAY -> {
+                String choice = howtoplayMenu.handleMouseClick(p, getWidth(), getHeight());
+                if ("BACK".equals(choice)) {
+                    manager.setGameState(GameState.MENU);
+                }
+            }
+            case HIGHSCORE -> {
+                if ("EXIT MENU".equals(highScoreMenu.handleMouseClick(p, getWidth(), getHeight())))
+                    manager.setGameState(GameState.MENU);
+            }
+            case LEVELS -> {
+                String choice = levelMenu.handleMouseClick(p, getWidth(), getHeight());
+                if (choice == null) break;
+
+                if (choice.equals("BACK")) {
+                    manager.setGameState(GameState.MENU);
+                    break;
+                }
+
+                if (choice.startsWith("LEVEL ")) {
+                    int levelNum = Integer.parseInt(choice.split(" ")[1]);
+                    manager.loadLevelFromFile(levelNum, true);
+                    manager.setGameState(GameState.READY);
+                    SoundManager.stopMenuMusic();
+                    repaint();
+                    System.out.println("Loaded Level " + levelNum);
+                }
+            }
+
+        }
+
+        repaint();
+    }
+
+    private boolean isPauseClicked(Point p) {
+        return p.x >= PAUSE_ICON_X && p.x <= PAUSE_ICON_X + PAUSE_ICON_SIZE &&
+                p.y >= PAUSE_ICON_Y && p.y <= PAUSE_ICON_Y + PAUSE_ICON_SIZE;
+    }
+
+    private void togglePause(GameManager m) {
+        if (m.getGameState() == GameState.PLAYING)
+            m.setGameState(GameState.PAUSED);
+        else if (m.getGameState() == GameState.PAUSED)
+            m.setGameState(GameState.PLAYING);
+    }
+
+    private void handleGameOverClick(GameManager m, Point p) {
+        String choice = gameOverMenu.handleMouseClick(p, getWidth(), getHeight());
+
+        switch (choice) {
+            case "REPLAY" -> m.startNewGame();
+            case "EXIT MENU" -> m.goToMainMenu();
+            case "EXIT" -> System.exit(0);
         }
     }
 
-    public void clearBricks() {
-        gameObjects.removeIf(obj -> obj instanceof Objects.Brick);
-    }
+    // Unused
+    @Override public void mouseDragged(MouseEvent e) {}
+    @Override public void mousePressed(MouseEvent e) {}
+    @Override public void mouseReleased(MouseEvent e) {}
+    @Override public void mouseEntered(MouseEvent e) {}
+    @Override public void mouseExited(MouseEvent e) {}
 }
