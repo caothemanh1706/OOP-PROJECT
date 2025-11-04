@@ -88,6 +88,26 @@ public class SoundManager {
         clip.setFramePosition(0);
         clip.loop(Clip.LOOP_CONTINUOUSLY);
     }
+    public static void stopMusic() {
+        if (backgroundClip != null && backgroundClip.isRunning()) {
+            backgroundClip.stop();
+        }
+    }
+
+    public static void playMenuMusic() {
+        stopMusic();
+        Clip clip = clips.get("game_start.wav"); // dùng clip đã preload
+        if (clip == null) {
+            System.err.println("Nhạc menu chưa được preload!");
+            return;
+        }
+
+        backgroundClip = clip;
+        clip.setFramePosition(0);
+        clip.loop(Clip.LOOP_CONTINUOUSLY);
+        clip.start();
+    }
+
 
     /**
      * Stop Music.
@@ -110,7 +130,6 @@ public class SoundManager {
 
         try {
             if (clip.isRunning()) {
-                // Nếu clip đang phát, clone một bản mới
                 Clip newClip = AudioSystem.getClip();
                 AudioInputStream ais = AudioSystem.getAudioInputStream(
                         SoundManager.class.getResource("/Sounds/" + soundFile));
