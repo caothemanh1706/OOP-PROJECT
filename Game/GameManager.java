@@ -49,6 +49,7 @@ public class GameManager {
     public Paddle getPaddle() { return paddle; }
     public int getLives() { return lives; }
     public int getScore() { return score; }
+    public List<ExplosionEffect> getExplosions() { return explosions; }
 
     // ==== SINGLETON ACCESS ====
     public static GameManager getInstance() {
@@ -327,6 +328,19 @@ public class GameManager {
                     }
 
                     if (brick.isDestroyed()) {
+                        if (brick instanceof ExplosiveBrick) {
+                            int explosionSize = 160;
+                            float offset = 80f;
+
+                            ExplosionEffect newExplosion = new ExplosionEffect(
+                                    brick.getX() + brick.getWidth() / 2f - offset,
+                                    brick.getY() + brick.getHeight() / 2f - offset,
+                                    explosionSize, explosionSize,
+                                    "/assets/explosion.gif"
+                            );
+                            explosions.add(newExplosion);
+                        }
+                        
                         bricksToRemove.add(brick);
                         score += 20;
 
