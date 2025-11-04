@@ -56,3 +56,5 @@ Mục tiêu: **Phá hết gạch trong mỗi màn chơi và không để bóng r
 
 ##  UML Diagram
 ![Class Diagram](assets/umlDiagram.PNG)
+[UML Diagram Source (.drawio)](assets/dr.drawio)
+
