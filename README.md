@@ -1,7 +1,7 @@
 # **OOP-Project**
 ## ***Arkanoid Game (Java Swing)***
 ##  UML Diagram
-![Class Diagram](assets/umlDiagram.PNG)
+![Class Diagram](assets/umlDiagram.png)
 [UML Diagram Source (.drawio)](assets/dr.drawio)
 ## Link Demo Game : https://drive.google.com/file/d/100f51yzKPBwbELDzSKNLmItAsRuxCIhR/view?usp=sharing
 Project: Arkanoid — trò chơi phá gạch viết bằng **Java + Swing**.
