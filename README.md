@@ -1,13 +1,16 @@
 # **OOP-Project**
 ## ***Arkanoid Game (Java Swing)***
-
+##  UML Diagram
+![Class Diagram](assets/umlDiagram.PNG)
+[UML Diagram Source (.drawio)](assets/dr.drawio)
+## Link Demo Game : https://drive.google.com/file/d/100f51yzKPBwbELDzSKNLmItAsRuxCIhR/view?usp=sharing
 Project: Arkanoid — trò chơi phá gạch viết bằng **Java + Swing**.
 
 ## Thành Viên Nhóm
-- Nguyễn Quang Hưng — Nhóm trưởng  
-- Cao Thế Mạnh  
-- Phạm Xuân Hiếu  
-- Nguyễn Tuấn Thảo  
+- Nguyễn Quang Hưng — Nhóm trưởng  : Làm sơ đồ lớp và paddle , ball và powerup cho ball
+- Cao Thế Mạnh  : làm giao diện game , âm thanh , powerup cho paddle
+- Phạm Xuân Hiếu  : làm hệ thống gạch và các map chơi của game
+- Nguyễn Tuấn Thảo  : làm logic game + làm 1 phần giao diện game
 
 ## Giới Thiệu
 Arkanoid là một tựa game cổ điển, người chơi điều khiển thanh **paddle** để bật bóng và phá vỡ các ô gạch (block).  
@@ -53,8 +56,3 @@ Mục tiêu: **Phá hết gạch trong mỗi màn chơi và không để bóng r
 - Âm thanh va chạm  
 - Âm thanh phá gạch  
 - Nhạc nền  
-
-##  UML Diagram
-![Class Diagram](assets/umlDiagram.PNG)
-[UML Diagram Source (.drawio)](assets/dr.drawio)
-
